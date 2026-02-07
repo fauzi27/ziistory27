@@ -1,8 +1,347 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calon Mantu Idaman - Browser Version</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #game-container { display: flex; flex-direction: column; align-items: center; }
+        canvas { border: 1px solid black; }
+        #controls { margin-top: 20px; }
+        #log { margin-top: 20px; width: 800px; height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+    </style>
+</head>
 <body>
-<h1>Selamat Datang di Website Fauzi27</h1>
-<p>Klik di bawah untuk main game:</p>
-<a href="/game/kop">Mainkan Game KOP</a>
+    <div id="game-container">
+        <canvas id="board" width="1000" height="1000"></canvas>
+        <div id="controls">
+            <button id="roll-btn">Roll Dadu (Player's Turn)</button>
+            <select id="player-select">
+                <option value="0">Player 1</option>
+                <option value="1">Player 2</option>
+            </select>
+        </div>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // Constants
+        const CELL_SIZE = 195;
+        const NUM_CELLS = 16;
+        const boardPositions = [
+            {x: 0, y: 1000 - CELL_SIZE}, // START
+            {x: CELL_SIZE, y: 1000 - CELL_SIZE},
+            {x: 2 * CELL_SIZE, y: 1000 - CELL_SIZE},
+            {x: 3 * CELL_SIZE, y: 1000 - CELL_SIZE},
+            {x: 4 * CELL_SIZE, y: 1000 - CELL_SIZE}, // Bottom-right
+
+            {x: 4 * CELL_SIZE, y: 3 * CELL_SIZE},
+            {x: 4 * CELL_SIZE, y: 2 * CELL_SIZE},
+            {x: 4 * CELL_SIZE, y: CELL_SIZE},
+            {x: 4 * CELL_SIZE, y: 0}, // Top-right
+
+            {x: 3 * CELL_SIZE, y: 0},
+            {x: 2 * CELL_SIZE, y: 0},
+            {x: CELL_SIZE, y: 0},
+            {x: 0, y: 0}, // Top-left
+
+            {x: 0, y: CELL_SIZE},
+            {x: 0, y: 2 * CELL_SIZE},
+            {x: 0, y: 3 * CELL_SIZE}
+        ];
+
+        const boardCells = [
+            {name: "START: Restu Awal & Gaji", effect: "start"},
+            {name: "Bawain Martabak", effect: "martabak"},
+            {name: "KARTU KESEMPATAN (Receh)", effect: "kesempatan"},
+            {name: "Puji Masakan Camer", effect: "puji"},
+            {name: "POS RONDA 'Zona Nyaman'", effect: "safe"},
+
+            {name: "Jadi Supir Dadakan", effect: "supir"},
+            {name: "Pajak THR Keponakan", effect: "pajak"},
+            {name: "KARTU SPESIAL (Item)", effect: "spesial"},
+            {name: "RSJ 'Stress Mikirin Camer'", effect: "rsj"},
+
+            {name: "Benerin Genteng Bocor", effect: "genteng"},
+            {name: "Toko Emas 'KW Super'", effect: "emas"},
+            {name: "PRANK 'SOSIAL EKSPERIMEN'", effect: "prank"},
+            {name: "KARTU EKSTREM", effect: "ekstrem"},
+
+            {name: "Mantan Pacar Datang!", effect: "mantan"},
+            {name: "Ditanya 'Kapan Nikah?'", effect: "nikah"},
+            {name: "NEKAT MELAMAR (Klimaks)", effect: "melamar"}
+        ];
+
+        // Card decks (simplified)
+        const kesempatanCards = [
+            {text: "Nemu uang di saku celana", effect: {uang: 5}},
+            {text: "Kucing kesayangan Camer menggarukmu", effect: {omelan: 2}}
+        ];
+
+        const spesialCards = [
+            {text: "Kartu 'Saya Lagi Sakit'", effect: "avoid_physical"},
+            {text: "Kartu 'Ngeles Tingkat Dewa'", effect: "cancel_omelan"}
+        ];
+
+        const ekstremCards = [
+            {text: "Camer Ulang Tahun", effect: "reset_omelan_all"},
+            {text: "Krisis Moneter Keluarga", effect: "half_uang_all"}
+        ];
+
+        const prankCards = [
+            {type: "good", text: "Viral Positif", effect: {hati: 10, uang: 10}},
+            {type: "bad", text: "Dihujat Netizen", effect: {omelan: 10, uang: -15}},
+            {type: "good", text: "Viral Positif", effect: {hati: 10, uang: 10}},
+            {type: "bad", text: "Dihujat Netizen", effect: {omelan: 10, uang: -15}}
+        ];
+
+        // Player class
+        class Player {
+            constructor(name, color) {
+                this.name = name;
+                this.color = color;
+                this.position = 0;
+                this.uang = 50;
+                this.hati = 0;
+                this.omelan = 0;
+                this.inventory = [];
+                this.inRsj = false;
+                this.skipTurn = false;
+            }
+        }
+
+        // Game variables
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const players = [
+            new Player("Player 1", 'red'),
+            new Player("Player 2", 'blue')
+        ];
+        let currentPlayer = 0;
+        const maxOmelan = 50;
+        let turns = 0;
+        const maxTurns = 20; // 10 rounds for 2 players
+        const logDiv = document.getElementById('log');
+
+        function log(message) {
+            logDiv.innerHTML += `<p>${message}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, 1000, 1000);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, 1000, 1000);
+
+            // Draw cells
+            boardPositions.forEach((pos, i) => {
+                ctx.strokeRect(pos.x, pos.y, CELL_SIZE, CELL_SIZE);
+                ctx.font = '12px Arial';
+                ctx.fillStyle = '#000';
+                ctx.fillText(boardCells[i].name, pos.x + 10, pos.y + 20, CELL_SIZE - 20);
+            });
+
+            // Center area
+            ctx.fillStyle = '#ccc';
+            ctx.fillRect(CELL_SIZE, CELL_SIZE, 3 * CELL_SIZE, 3 * CELL_SIZE);
+            ctx.fillStyle = '#000';
+            ctx.font = '20px Arial';
+            ctx.fillText("Area Kartu & Logo", CELL_SIZE + 50, CELL_SIZE + 50);
+
+            // Draw players
+            players.forEach(player => {
+                const pos = boardPositions[player.position];
+                ctx.fillStyle = player.color;
+                ctx.beginPath();
+                ctx.arc(pos.x + CELL_SIZE / 2, pos.y + CELL_SIZE / 2, 20, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function handleEffect(player, cell) {
+            const effect = cell.effect;
+            let message = `${player.name} landed on ${cell.name}: `;
+            if (effect === "start") {
+                player.uang += 20;
+                message += "Gets 20 Uang Jajan!";
+            } else if (effect === "martabak") {
+                if (player.uang >= 3) {
+                    player.uang -= 3;
+                    player.hati += 1;
+                    message += "Pays 3, gains 1 Hati!";
+                } else {
+                    player.omelan += 5;
+                    message += "Can't pay, +5 Omelan!";
+                }
+            } else if (effect === "kesempatan") {
+                const card = kesempatanCards[getRandomInt(0, kesempatanCards.length - 1)];
+                message += `Draws: ${card.text}`;
+                if (card.effect.uang) player.uang += card.effect.uang;
+                if (card.effect.omelan) player.omelan += card.effect.omelan;
+            } else if (effect === "puji") {
+                const roll = getRandomInt(1, 6);
+                if (roll % 2 === 0) {
+                    player.hati += 2;
+                    message += "Success! +2 Hati";
+                } else {
+                    message += "Ignored, safe.";
+                }
+            } else if (effect === "safe") {
+                message += "Safe zone.";
+            } else if (effect === "supir") {
+                player.position = 1;
+                message += "Back to Martabak and pay again!";
+                handleEffect(player, boardCells[1]);
+            } else if (effect === "pajak") {
+                players.forEach(other => {
+                    if (other !== player) {
+                        if (player.uang >= 2) {
+                            player.uang -= 2;
+                            other.uang += 2;
+                        }
+                    }
+                });
+                message += "Pays 2 to each other player.";
+            } else if (effect === "spesial") {
+                const card = spesialCards[getRandomInt(0, spesialCards.length - 1)];
+                player.inventory.push(card);
+                message += `Gets special card: ${card.text}`;
+            } else if (effect === "rsj") {
+                player.inRsj = true;
+                player.skipTurn = true;
+                message += "In RSJ, skip next turn.";
+            } else if (effect === "genteng") {
+                const roll = getRandomInt(1, 6);
+                if (roll >= 5) {
+                    player.hati += 8;
+                    message += "Success! +8 Hati";
+                } else {
+                    player.omelan += 5;
+                    player.uang = Math.max(0, player.uang - 5);
+                    message += "Fail! +5 Omelan, -5 Uang";
+                }
+            } else if (effect === "emas") {
+                const buy = confirm(`${player.name}, want to buy? (20 Uang)`);
+                if (buy && player.uang >= 20) {
+                    player.uang -= 20;
+                    const roll = getRandomInt(1, 6);
+                    if (roll % 2 === 0) {
+                        player.hati += 15;
+                        message += "Success! +15 Hati";
+                    } else {
+                        player.omelan += 10;
+                        message += "Fake! +10 Omelan";
+                    }
+                } else {
+                    message += "Passed.";
+                }
+            } else if (effect === "prank") {
+                shuffle(prankCards);
+                const card = prankCards[getRandomInt(0, 3)];
+                message += `Gets: ${card.text}`;
+                if (card.effect.hati) player.hati += card.effect.hati;
+                if (card.effect.omelan) player.omelan += card.effect.omelan;
+                if (card.effect.uang) player.uang += card.effect.uang;
+            } else if (effect === "ekstrem") {
+                const card = ekstremCards[getRandomInt(0, ekstremCards.length - 1)];
+                message += `Draws extreme: ${card.text}`;
+                if (card.effect === "reset_omelan_all") {
+                    players.forEach(p => p.omelan = 0);
+                } else if (card.effect === "half_uang_all") {
+                    players.forEach(p => p.uang = Math.floor(p.uang / 2));
+                }
+            } else if (effect === "mantan") {
+                player.omelan += 10;
+                message += "+10 Omelan!";
+            } else if (effect === "nikah") {
+                const pay = confirm(`${player.name}, pay 10 to divert?`);
+                if (pay && player.uang >= 10) {
+                    player.uang -= 10;
+                    message += "Paid, safe.";
+                } else {
+                    player.omelan += 5;
+                    message += "+5 Omelan!";
+                }
+            } else if (effect === "melamar") {
+                const roll1 = getRandomInt(1, 6);
+                const roll2 = getRandomInt(1, 6);
+                message += `Rolled ${roll1} + ${roll2}`;
+                if (roll1 === 6 && roll2 === 6) {
+                    player.hati += 30;
+                    alert(`${player.name} wins instantly!`);
+                    // End game
+                    document.getElementById('roll-btn').disabled = true;
+                } else {
+                    player.omelan += 20;
+                    player.position = 8; // To RSJ
+                    handleEffect(player, boardCells[8]);
+                    message += "Rejected! +20 Omelan, to RSJ.";
+                }
+            }
+
+            log(message);
+            log(`${player.name} Stats: Uang: ${player.uang}, Hati: ${player.hati}, Omelan: ${player.omelan}`);
+
+            if (player.omelan >= maxOmelan) {
+                log(`${player.name} loses! Omelan maxed.`);
+                players.splice(players.indexOf(player), 1);
+                if (players.length === 1) {
+                    alert(`${players[0].name} wins!`);
+                    document.getElementById('roll-btn').disabled = true;
+                }
+            }
+        }
+
+        function playTurn() {
+            const player = players[currentPlayer];
+            if (player.skipTurn) {
+                player.skipTurn = false;
+                player.inRsj = false;
+                log(`${player.name} skips turn in RSJ.`);
+            } else {
+                const roll = getRandomInt(1, 6);
+                log(`${player.name} rolled: ${roll}`);
+                const oldPos = player.position;
+                player.position = (player.position + roll) % NUM_CELLS;
+                const cell = boardCells[player.position];
+                handleEffect(player, cell);
+
+                // Pass start
+                if (player.position < oldPos) {
+                    handleEffect(player, boardCells[0]);
+                }
+            }
+
+            currentPlayer = (currentPlayer + 1) % players.length;
+            turns++;
+            if (turns >= maxTurns) {
+                let winner = players[0];
+                players.forEach(p => {
+                    if (p.hati > winner.hati) winner = p;
+                });
+                alert(`Game over! ${winner.name} wins with ${winner.hati} Hati!`);
+                document.getElementById('roll-btn').disabled = true;
+            }
+
+            drawBoard();
+        }
+
+        // Init
+        drawBoard();
+        document.getElementById('roll-btn').addEventListener('click', playTurn);
+        // Player select not fully implemented, but can switch currentPlayer manually if needed
+    </script>
 </body>
 </html>
