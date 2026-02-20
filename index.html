@@ -112,8 +112,8 @@
             document.getElementById('remove-base-image').classList.replace('flex', 'hidden');
         }
 
-        // LOGIKA AI GENERATOR
-        function generateAll() {
+        // LOGIKA AI GENERATOR (SISTEM ANTREAN / SEQUENTIAL)
+        async function generateAll() {
             const basePrompt = document.getElementById('prompt-input').value.trim();
             if (!basePrompt) {
                 alert("Tolong isi deskripsi karakter (Prompt) terlebih dahulu!");
@@ -121,21 +121,18 @@
             }
 
             const btn = document.getElementById('btn-generate');
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i> SEDANG MEMPROSES...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i> MEMPROSES ANTREAN...';
             btn.disabled = true;
 
-            // 1. Buat SEED acak. Seed ini dipakai di semua gambar agar wajah/baju tetap konsisten!
+            // 1. Buat SEED acak
             const seed = Math.floor(Math.random() * 9999999);
             
-            // 2. Daftar perintah (prompt tambahan) untuk masing-masing kotak
+            // 2. Daftar antrean gambar
             const tasks = [
-                // Views (Full body / Upper body)
                 { id: 'view-front', prompt: `${basePrompt}, full body, front view, facing camera, character sheet` },
                 { id: 'view-back', prompt: `${basePrompt}, full body, back view, viewed from behind, character sheet` },
                 { id: 'view-left', prompt: `${basePrompt}, full body, looking left, side profile view, character sheet` },
                 { id: 'view-right', prompt: `${basePrompt}, full body, looking right, side profile view, character sheet` },
-                
-                // Emotions (Close up wajah)
                 { id: 'emo-happy', prompt: `${basePrompt}, extreme close up face portrait, very happy expression, bright smile, joyful` },
                 { id: 'emo-sad', prompt: `${basePrompt}, extreme close up face portrait, sad expression, crying, tears, depressing` },
                 { id: 'emo-angry', prompt: `${basePrompt}, extreme close up face portrait, very angry expression, furious, shouting` },
@@ -146,53 +143,58 @@
                 { id: 'emo-neutral', prompt: `${basePrompt}, extreme close up face portrait, neutral expression, serious, calm face` }
             ];
 
-            // 3. Eksekusi pemanggilan gambar ke masing-masing kotak
+            // 3. Ubah semua kotak jadi mode "Menunggu"
             tasks.forEach(task => {
                 const container = document.getElementById(task.id);
-                
-                // Ubah kotak jadi mode loading
-                container.innerHTML = '<i class="fas fa-circle-notch fa-spin text-2xl text-blue-500"></i>';
+                container.innerHTML = '<div class="flex flex-col items-center"><i class="fas fa-hourglass-half text-xl text-gray-400"></i><span class="text-[10px] mt-2 text-gray-400 font-bold">Mengantre...</span></div>';
                 container.classList.add('loading-pulse');
                 container.classList.remove('border-dashed');
-
-                // Gunakan API Pollinations
-                // Format: https://image.pollinations.ai/prompt/[teks]?seed=[angka]&width=[w]&height=[h]&nologo=true
-                const encodedPrompt = encodeURIComponent(task.prompt);
-                
-                // Dimensi gambar: View (3:4), Emotion (1:1)
-                const isView = task.id.includes('view');
-                const width = isView ? 512 : 512;
-                const height = isView ? 768 : 512;
-
-                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}&nologo=true`;
-
-                // Buat elemen gambar
-                const img = new Image();
-                img.src = imageUrl;
-                img.className = 'w-full h-full object-cover rounded-lg opacity-0 transition-opacity duration-500';
-
-                // Jika gambar selesai di-download dari server AI
-                img.onload = () => {
-                    container.innerHTML = ''; // Hapus icon loading
-                    container.classList.remove('loading-pulse');
-                    container.appendChild(img);
-                    // Beri jeda sedikit agar efek transisi CSS muncul
-                    setTimeout(() => img.classList.remove('opacity-0'), 50);
-                };
-
-                // Jika gagal (server down)
-                img.onerror = () => {
-                    container.classList.remove('loading-pulse');
-                    container.innerHTML = '<span class="text-xs text-red-500 text-center px-2">Gagal memuat gambar</span>';
-                };
             });
 
-            // Kembalikan tombol ke semula setelah 3 detik (asumsi request sudah jalan)
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-rocket text-xl"></i> GENERATE SEMUA VARIASI';
-                btn.disabled = false;
-            }, 3000);
+            // 4. Proses satu per satu menggunakan Async/Await
+            for (let i = 0; i < tasks.length; i++) {
+                const task = tasks[i];
+                const container = document.getElementById(task.id);
+                
+                // Update status kotak yang sedang diproses
+                container.innerHTML = '<div class="flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-2xl text-blue-500"></i><span class="text-[10px] mt-2 text-blue-500 font-bold">Generating...</span></div>';
+
+                // Kita buat Promise agar browser menunggu gambar ini selesai didownload sebelum lanjut ke gambar berikutnya
+                await new Promise((resolve) => {
+                    const encodedPrompt = encodeURIComponent(task.prompt);
+                    const isView = task.id.includes('view');
+                    const width = isView ? 512 : 512;
+                    const height = isView ? 768 : 512;
+
+                    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}&nologo=true`;
+
+                    const img = new Image();
+                    img.src = imageUrl;
+                    img.className = 'w-full h-full object-cover rounded-lg opacity-0 transition-opacity duration-500';
+
+                    // Jika sukses
+                    img.onload = () => {
+                        container.innerHTML = ''; 
+                        container.classList.remove('loading-pulse');
+                        container.appendChild(img);
+                        setTimeout(() => img.classList.remove('opacity-0'), 50);
+                        resolve(); // Lanjut ke antrean berikutnya!
+                    };
+
+                    // Jika gagal
+                    img.onerror = () => {
+                        container.classList.remove('loading-pulse');
+                        container.innerHTML = '<span class="text-xs text-red-500 text-center px-2">Gagal memuat gambar</span>';
+                        resolve(); // Tetap lanjut ke antrean berikutnya meskipun ini gagal
+                    };
+                });
+            }
+
+            // Selesai semua antrean
+            btn.innerHTML = '<i class="fas fa-rocket text-xl"></i> GENERATE SEMUA VARIASI';
+            btn.disabled = false;
         }
     </script>
+
 </body>
 </html>
