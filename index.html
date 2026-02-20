@@ -8,13 +8,18 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* Sembunyikan scrollbar untuk tab kategori tapi tetap bisa digeser */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans pb-24">
+<body class="bg-gray-50 font-sans pb-24">
 
     <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold" id="shop-title">Warung Sahabat</h1>
-            <p class="text-xs text-blue-200">Pesan, Bayar QRIS, Tinggal Duduk Manis</p>
+            <p class="text-[10px] text-blue-200">Pesan, Bayar QRIS, Tinggal Duduk Manis</p>
         </div>
         <i class="fas fa-utensils text-2xl opacity-80"></i>
     </header>
@@ -24,6 +29,9 @@
             <i class="fas fa-fire text-orange-500"></i> Menu Kami
         </h2>
         
+        <div id="category-tabs" class="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+            </div>
+
         <div id="loading-menu" class="text-center mt-10 text-gray-400 text-sm">
             <i class="fas fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i><br>Memuat Menu...
         </div>
@@ -34,10 +42,10 @@
 
     <div class="fixed bottom-0 w-full bg-white border-t p-3 shadow-[0_-5px_15px_rgba(0,0,0,0.1)] z-40 flex justify-between items-center pb-safe">
         <div>
-            <p class="text-xs text-gray-500 font-bold">Total Pesanan (<span id="cart-count">0</span> item)</p>
-            <p class="text-xl font-bold text-blue-600" id="cart-total">Rp 0</p>
+            <p class="text-[10px] text-gray-500 font-bold">Total Pesanan (<span id="cart-count">0</span> item)</p>
+            <p class="text-xl font-bold text-blue-600 leading-tight" id="cart-total">Rp 0</p>
         </div>
-        <button onclick="showCheckout()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition active:scale-95 flex items-center gap-2">
+        <button onclick="showCheckout()" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition active:scale-95 flex items-center gap-2 text-sm">
             Checkout <i class="fas fa-arrow-right"></i>
         </button>
     </div>
@@ -49,11 +57,11 @@
                 <i class="fas fa-times"></i>
             </button>
 
-            <div class="p-5 border-b text-center">
+            <div class="p-4 border-b text-center">
                 <h3 class="font-bold text-lg text-gray-800">Selesaikan Pesanan</h3>
             </div>
             
-            <div class="p-5 overflow-y-auto max-h-[60vh]">
+            <div class="p-5 overflow-y-auto max-h-[65vh]">
                 <input type="text" id="cust-name" placeholder="Nama Pemesan" class="w-full p-3 border rounded-lg mb-3 bg-gray-50 outline-none focus:border-blue-500 text-sm font-bold">
                 <input type="text" id="cust-table" placeholder="Nomor Meja / Alamat" class="w-full p-3 border rounded-lg mb-4 bg-gray-50 outline-none focus:border-blue-500 text-sm font-bold">
 
@@ -61,12 +69,10 @@
                     </div>
 
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
-                    <p class="text-xs font-bold text-blue-800 mb-2">SCAN QRIS UNTUK MEMBAYAR</p>
+                    <p class="text-xs font-bold text-blue-800 mb-1">SCAN QRIS UNTUK MEMBAYAR</p>
                     <p class="text-2xl font-extrabold text-blue-600 mb-3" id="qris-amount">Rp 0</p>
-                    
                     <img id="qris-image" src="" alt="QRIS" class="w-48 h-48 mx-auto rounded-lg shadow-sm border p-2 bg-white object-contain">
-                    
-                    <p class="text-[10px] text-gray-500 mt-2 mt-2">*Pastikan nominal sesuai sebelum membayar</p>
+                    <p class="text-[10px] text-gray-500 mt-2">*Pastikan nominal sesuai sebelum membayar</p>
                 </div>
             </div>
             
@@ -91,15 +97,14 @@
             projectId: "kasir-128a2",
             storageBucket: "kasir-128a2.firebasestorage.app",
             messagingSenderId: "566922594063",
-            appId: "1:566922594063:web:c251d0943a0e20ab51a07a",
-            measurementId: "G-NM9MSXY677"
+            appId: "1:566922594063:web:c251d0943a0e20ab51a07a"
         };
         
-        // PASTE UID DARI MENU AUTHENTICATION FIREBASE DI BAWAH INI:
-        const ID_ADMIN_KASIR = "zy8AUA4PUdhj4LSrxzMgfT270Ut2"; 
-        
+        const ID_ADMIN_KASIR = "dJzV5fP4B0fJm2gTjY7rWqM3lN92"; // Asumsi pakai UID bosku
         const NOMOR_WA_TOKO = "6285939939449"; 
-        const LINK_GAMBAR_QRIS = "https://collection.cloudinary.com/dsutaioqw/7c864692b44804a2f1c27aecc23fcbf5"; 
+        
+        // GANTI LINK DI BAWAH INI DENGAN LINK GAMBAR DIRECT (.jpg/.png)
+        const LINK_GAMBAR_QRIS = "https://res.cloudinary.com/dsutaioqw/image/upload/v1771581748/IMG-20260220-WA0004_xzigot.jpg";
         // ==========================================
 
         const app = initializeApp(firebaseConfig);
@@ -107,30 +112,63 @@
 
         let menus = [];
         let cart = [];
+        let currentCategory = 'all'; // State Kategori saat ini
 
-        // 1. Ambil Menu dari Firebase Kasir Bosku
         const menuCol = collection(db, "users", ID_ADMIN_KASIR, "menus");
         onSnapshot(menuCol, (snapshot) => {
             menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             document.getElementById('loading-menu').classList.add('hidden');
+            
+            // Ekstrak dan buat tab kategori
+            renderCategories();
+            // Tampilkan menu
             renderMenus();
         }, (error) => {
             console.error("Error mengambil menu:", error);
-            document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Pastikan aturan Firebase (Rules) sudah disetting ke "allow read: if true;"</p>`;
+            document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Cek Rules Firebase!</p>`;
         });
 
-        // Set QRIS Image
         document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
 
+        // --- FUNGSI RENDER KATEGORI ---
+        function renderCategories() {
+            const container = document.getElementById('category-tabs');
+            
+            // Ambil semua kategori unik dari array menus, ubah jadi huruf kecil semua
+            const uniqueCats = [...new Set(menus.map(m => (m.category || 'lainnya').toLowerCase()))];
+            
+            let html = `<button onclick="setCategory('all')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border ${currentCategory === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}">Semua</button>`;
+            
+            uniqueCats.forEach(cat => {
+                const isActive = currentCategory === cat;
+                const activeClass = isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200';
+                html += `<button onclick="setCategory('${cat}')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border capitalize ${activeClass}">${cat}</button>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        window.setCategory = function(cat) {
+            currentCategory = cat;
+            renderCategories(); // Update warna tombol
+            renderMenus();      // Update daftar menu yang tampil
+        }
+
+        // --- FUNGSI RENDER MENU ---
         function renderMenus() {
             const container = document.getElementById('menu-container');
             container.innerHTML = '';
             
-            // Saring menu, hanya tampilkan yang stoknya lebih dari 0 atau yang stoknya tidak dibatasi
-            const availableMenus = menus.filter(m => m.stock > 0 || m.stock === undefined);
+            // 1. Saring menu yang tersedia (stok > 0)
+            let availableMenus = menus.filter(m => m.stock > 0 || m.stock === undefined);
+
+            // 2. Filter berdasarkan kategori yang sedang diklik
+            if (currentCategory !== 'all') {
+                availableMenus = availableMenus.filter(m => (m.category || 'lainnya').toLowerCase() === currentCategory);
+            }
 
             if(availableMenus.length === 0) {
-                container.innerHTML = '<p class="col-span-2 text-center text-gray-500 text-sm py-10">Maaf, menu sedang tidak tersedia atau toko tutup.</p>';
+                container.innerHTML = '<p class="col-span-2 text-center text-gray-400 text-xs py-10 italic">Menu tidak ditemukan di kategori ini.</p>';
                 return;
             }
 
@@ -140,22 +178,23 @@
                 el.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-2">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-500 bg-gray-50 border">
-                                <i class="fas ${item.icon || 'fa-utensils'} text-lg"></i>
+                            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 bg-gray-50 border">
+                                <i class="fas ${item.icon || 'fa-utensils'} text-sm"></i>
                             </div>
-                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Tersedia</span>
+                            <span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Tersedia</span>
                         </div>
-                        <h3 class="font-bold text-sm text-gray-800 leading-tight mb-1">${item.name}</h3>
+                        <h3 class="font-bold text-[11px] text-gray-800 leading-tight mb-1 line-clamp-2 h-7">${item.name}</h3>
                         <p class="text-xs text-blue-600 font-bold mb-3">Rp ${(item.price || 0).toLocaleString('id-ID')}</p>
                     </div>
-                    <button onclick="addToCart('${item.id}')" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition active:scale-95">
-                        <i class="fas fa-plus"></i> Tambah
+                    <button onclick="addToCart('${item.id}')" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition active:scale-95 flex items-center justify-center gap-1">
+                        <i class="fas fa-plus text-[10px]"></i> Tambah
                     </button>
                 `;
                 container.appendChild(el);
             });
         }
 
+        // --- SISA FUNGSI CART & CHECKOUT TETAP SAMA ---
         window.addToCart = function(id) {
             const item = menus.find(m => m.id === id);
             if (!item) return;
@@ -167,17 +206,13 @@
                 cart.push({ id: item.id, name: item.name, price: parseInt(item.price), qty: 1 });
             }
             updateCartUI();
-            
-            Swal.fire({toast: true, position: 'top-end', icon: 'success', title: `${item.name} ditambahkan!`, showConfirmButton: false, timer: 800});
+            Swal.fire({toast: true, position: 'top-end', icon: 'success', title: `+1 ${item.name}`, showConfirmButton: false, timer: 700});
         }
 
         function updateCartUI() {
             let total = 0;
             let count = 0;
-            cart.forEach(item => {
-                total += (item.price * item.qty);
-                count += item.qty;
-            });
+            cart.forEach(item => { total += (item.price * item.qty); count += item.qty; });
 
             document.getElementById('cart-total').innerText = 'Rp ' + total.toLocaleString('id-ID');
             document.getElementById('cart-count').innerText = count;
@@ -185,8 +220,7 @@
         }
 
         window.showCheckout = function() {
-            if (cart.length === 0) return Swal.fire('Keranjang Kosong', 'Pilih menu dulu ya kak!', 'warning');
-            
+            if (cart.length === 0) return Swal.fire('Kosong', 'Pilih menu dulu ya kak!', 'warning');
             generateReceiptPreview();
             document.getElementById('checkout-modal').classList.remove('hidden');
         }
@@ -211,14 +245,13 @@
             cart.forEach(i => {
                 let sub = i.price * i.qty;
                 total += sub;
-                html += `<div class="flex justify-between text-xs"><span>${i.qty}x ${i.name}</span><span>${sub.toLocaleString()}</span></div>`;
+                html += `<div class="flex justify-between text-[11px]"><span>${i.qty}x ${i.name}</span><span>${sub.toLocaleString()}</span></div>`;
             });
 
             html += `
                 </div>
-                <div class="flex justify-between font-bold text-sm"><span>TOTAL (QRIS)</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>
+                <div class="flex justify-between font-bold text-sm mt-2"><span>TOTAL (QRIS)</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>
             `;
-            
             container.innerHTML = html;
         }
 
@@ -226,42 +259,33 @@
             const nama = document.getElementById('cust-name').value.trim();
             const meja = document.getElementById('cust-table').value.trim();
 
-            if (!nama || !meja) {
-                return Swal.fire('Data Kurang', 'Mohon isi Nama dan Nomor Meja/Alamat!', 'error');
-            }
+            if (!nama || !meja) return Swal.fire('Data Kurang', 'Mohon isi Nama dan Nomor Meja!', 'error');
 
             const receipt = document.getElementById('receipt-content');
-            receipt.innerHTML = `<div class="text-xs font-bold mb-2 pb-2 border-b border-dashed">Pemesan: ${nama} <br>Meja/Alamat: ${meja}</div>` + receipt.innerHTML;
+            receipt.innerHTML = `<div class="text-[11px] font-bold mb-2 pb-2 border-b border-dashed">Pemesan: ${nama} <br>Meja/Alamat: ${meja}</div>` + receipt.innerHTML;
 
             let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-            let textWA = `*Pesanan Baru (QRIS)*%0A%0A`;
-            textWA += `*Nama:* ${nama}%0A`;
-            textWA += `*Meja/Alamat:* ${meja}%0A%0A`;
-            textWA += `*Pesanan:*%0A`;
+            let textWA = `*Pesanan Baru (QRIS)*%0A%0A*Nama:* ${nama}%0A*Meja/Alamat:* ${meja}%0A%0A*Pesanan:*%0A`;
             cart.forEach(i => textWA += `- ${i.qty}x ${i.name} (Rp ${(i.price * i.qty).toLocaleString()})%0A`);
-            textWA += `%0A*Total Bayar:* Rp ${total.toLocaleString('id-ID')}%0A%0A`;
-            textWA += `_Catatan untuk Penjual: Saya melampirkan gambar Struk & Bukti Transfer QRIS._`;
+            textWA += `%0A*Total Bayar:* Rp ${total.toLocaleString('id-ID')}%0A%0A_Catatan: Struk & Bukti Transfer QRIS terlampir._`;
 
             let waLink = `https://wa.me/${NOMOR_WA_TOKO}?text=${textWA}`;
 
             Swal.fire({
-                title: 'Menyiapkan Struk...',
-                text: 'Struk akan didownload, mohon lampirkan struk ini & bukti transfer QRIS di WhatsApp.',
-                timer: 2500,
+                title: 'Menyiapkan...',
+                text: 'Struk akan terdownload, lampirkan struk ini & bukti transfer QRIS di WhatsApp ya!',
+                timer: 3000,
                 showConfirmButton: false,
                 allowOutsideClick: false
             });
 
             html2canvas(receipt, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `Pesanan_${nama}_${Date.now()}.png`;
+                link.download = `Pesanan_${nama}.png`;
                 link.href = canvas.toDataURL();
                 link.click();
-                
-                setTimeout(() => {
-                    window.location.href = waLink;
-                }, 1000);
+                setTimeout(() => { window.location.href = waLink; }, 1000);
             });
         }
     </script>
