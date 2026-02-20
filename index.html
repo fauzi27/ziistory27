@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* Sembunyikan scrollbar untuk tab kategori tapi tetap bisa digeser */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -18,8 +17,8 @@
 
     <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
         <div>
-            <h1 class="text-xl font-bold" id="shop-title">Warung MieKopiEs</h1>
-            <p class="text-[10px] text-blue-200">Pesan, Bayar QRIS, Tunggu Konfirmasi Pesanan Jadi</p>
+            <h1 class="text-xl font-bold" id="shop-title">Warung Sahabat</h1>
+            <p class="text-[10px] text-blue-200">Pesan, Bayar QRIS, Tinggal Duduk Manis</p>
         </div>
         <i class="fas fa-utensils text-2xl opacity-80"></i>
     </header>
@@ -29,15 +28,13 @@
             <i class="fas fa-fire text-orange-500"></i> Menu Kami
         </h2>
         
-        <div id="category-tabs" class="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
-            </div>
+        <div id="category-tabs" class="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar"></div>
 
         <div id="loading-menu" class="text-center mt-10 text-gray-400 text-sm">
             <i class="fas fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i><br>Memuat Menu...
         </div>
 
-        <div class="grid grid-cols-2 gap-3" id="menu-container">
-            </div>
+        <div class="grid grid-cols-2 gap-3" id="menu-container"></div>
     </main>
 
     <div class="fixed bottom-0 w-full bg-white border-t p-3 shadow-[0_-5px_15px_rgba(0,0,0,0.1)] z-40 flex justify-between items-center pb-safe">
@@ -62,8 +59,15 @@
             </div>
             
             <div class="p-5 overflow-y-auto max-h-[65vh]">
-                <input type="text" id="cust-name" placeholder="Nama Pemesan" class="w-full p-3 border rounded-lg mb-3 bg-gray-50 outline-none focus:border-blue-500 text-sm font-bold">
-                <input type="text" id="cust-table" placeholder="Nomor Meja / Alamat" class="w-full p-3 border rounded-lg mb-4 bg-gray-50 outline-none focus:border-blue-500 text-sm font-bold">
+                
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-center shadow-sm">
+                    <p class="text-[10px] font-bold text-blue-800 uppercase">Nomor Antrean Anda</p>
+                    <p class="text-2xl font-black text-blue-600 tracking-widest" id="display-queue">-</p>
+                </div>
+
+                <input type="text" id="cust-name" placeholder="Nama Anda" class="w-full p-3 border rounded-lg mb-3 bg-gray-50 outline-none focus:border-blue-500 text-sm font-bold">
+                
+                <textarea id="cust-note" rows="2" placeholder="Catatan (opsional), cth: es teh manis, soto ayam pedas..." class="w-full p-3 border rounded-lg mb-4 bg-gray-50 outline-none focus:border-blue-500 text-sm"></textarea>
 
                 <div id="receipt-content" class="bg-white p-4 font-mono text-sm border-2 border-dashed border-gray-300 rounded-lg mb-4">
                     </div>
@@ -97,14 +101,15 @@
             projectId: "kasir-128a2",
             storageBucket: "kasir-128a2.firebasestorage.app",
             messagingSenderId: "566922594063",
-            appId: "1:566922594063:web:c251d0943a0e20ab51a07a"
+            appId: "1:566922594063:web:c251d0943a0e20ab51a07a",
+            measurementId: "G-NM9MSXY677"
         };
         
-        const ID_ADMIN_KASIR = "zy8AUA4PUdhj4LSrxzMgfT270Ut2"; // Asumsi pakai UID bosku
         const NOMOR_WA_TOKO = "6285939939449"; 
+        const LINK_GAMBAR_QRIS = "https://collection.cloudinary.com/dsutaioqw/7c864692b44804a2f1c27aecc23fcbf5"; 
         
-        // GANTI LINK DI BAWAH INI DENGAN LINK GAMBAR DIRECT (.jpg/.png)
-        const LINK_GAMBAR_QRIS = "https://res.cloudinary.com/dsutaioqw/image/upload/v1771581748/IMG-20260220-WA0004_xzigot.jpg";
+        // ⚠️ MASUKKAN ID ADMIN DARI KODEBASE BOSKU DI SINI:
+        const ID_ADMIN_KASIR = "zy8AUA4PUdhj4LSrxzMgfT270Ut2"; 
         // ==========================================
 
         const app = initializeApp(firebaseConfig);
@@ -112,29 +117,34 @@
 
         let menus = [];
         let cart = [];
-        let currentCategory = 'all'; // State Kategori saat ini
+        let currentCategory = 'all'; 
+        let currentQueue = ""; 
 
         const menuCol = collection(db, "users", ID_ADMIN_KASIR, "menus");
         onSnapshot(menuCol, (snapshot) => {
             menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             document.getElementById('loading-menu').classList.add('hidden');
-            
-            // Ekstrak dan buat tab kategori
             renderCategories();
-            // Tampilkan menu
             renderMenus();
         }, (error) => {
             console.error("Error mengambil menu:", error);
-            document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Cek Rules Firebase!</p>`;
+            document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Pastikan ID Admin benar dan Rules Firebase sudah di-set 'allow read: if true;'</p>`;
         });
 
         document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
 
-        // --- FUNGSI RENDER KATEGORI ---
+        // FUNGSI BUAT NOMOR ANTREAN (ttbbtt + 3 angka acak)
+        function generateQueueNumber() {
+            const d = new Date();
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = String(d.getFullYear()).slice(-2);
+            const randomUrut = String(Math.floor(Math.random() * 900) + 100); 
+            return `${dd}${mm}${yy}${randomUrut}`;
+        }
+
         function renderCategories() {
             const container = document.getElementById('category-tabs');
-            
-            // Ambil semua kategori unik dari array menus, ubah jadi huruf kecil semua
             const uniqueCats = [...new Set(menus.map(m => (m.category || 'lainnya').toLowerCase()))];
             
             let html = `<button onclick="setCategory('all')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border ${currentCategory === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}">Semua</button>`;
@@ -144,31 +154,26 @@
                 const activeClass = isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200';
                 html += `<button onclick="setCategory('${cat}')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border capitalize ${activeClass}">${cat}</button>`;
             });
-            
             container.innerHTML = html;
         }
 
         window.setCategory = function(cat) {
             currentCategory = cat;
-            renderCategories(); // Update warna tombol
-            renderMenus();      // Update daftar menu yang tampil
+            renderCategories(); 
+            renderMenus();      
         }
 
-        // --- FUNGSI RENDER MENU ---
         function renderMenus() {
             const container = document.getElementById('menu-container');
             container.innerHTML = '';
             
-            // 1. Saring menu yang tersedia (stok > 0)
             let availableMenus = menus.filter(m => m.stock > 0 || m.stock === undefined);
-
-            // 2. Filter berdasarkan kategori yang sedang diklik
             if (currentCategory !== 'all') {
                 availableMenus = availableMenus.filter(m => (m.category || 'lainnya').toLowerCase() === currentCategory);
             }
 
             if(availableMenus.length === 0) {
-                container.innerHTML = '<p class="col-span-2 text-center text-gray-400 text-xs py-10 italic">Menu tidak ditemukan di kategori ini.</p>';
+                container.innerHTML = '<p class="col-span-2 text-center text-gray-400 text-xs py-10 italic">Menu tidak ditemukan.</p>';
                 return;
             }
 
@@ -194,7 +199,6 @@
             });
         }
 
-        // --- SISA FUNGSI CART & CHECKOUT TETAP SAMA ---
         window.addToCart = function(id) {
             const item = menus.find(m => m.id === id);
             if (!item) return;
@@ -221,6 +225,11 @@
 
         window.showCheckout = function() {
             if (cart.length === 0) return Swal.fire('Kosong', 'Pilih menu dulu ya kak!', 'warning');
+            
+            // Buat No Antrean saat checkout dibuka
+            currentQueue = generateQueueNumber();
+            document.getElementById('display-queue').innerText = currentQueue;
+            
             generateReceiptPreview();
             document.getElementById('checkout-modal').classList.remove('hidden');
         }
@@ -257,18 +266,29 @@
 
         window.processOrder = function() {
             const nama = document.getElementById('cust-name').value.trim();
-            const meja = document.getElementById('cust-table').value.trim();
+            const catatan = document.getElementById('cust-note').value.trim();
 
-            if (!nama || !meja) return Swal.fire('Data Kurang', 'Mohon isi Nama dan Nomor Meja!', 'error');
+            if (!nama) return Swal.fire('Data Kurang', 'Mohon isi Nama Pemesan!', 'error');
 
             const receipt = document.getElementById('receipt-content');
-            receipt.innerHTML = `<div class="text-[11px] font-bold mb-2 pb-2 border-b border-dashed">Pemesan: ${nama} <br>Meja/Alamat: ${meja}</div>` + receipt.innerHTML;
+            const noteHtml = catatan ? `<br><span class="text-gray-600 font-normal mt-1 block">Catatan: ${catatan}</span>` : '';
+            
+            // Tambahkan Nomor Antrean, Nama, & Catatan di dalam struk HTML
+            receipt.innerHTML = `<div class="text-[11px] font-bold mb-2 pb-2 border-b border-dashed">
+                <span class="text-blue-600 block mb-1 text-sm">No. Antrean: ${currentQueue}</span>
+                Pemesan: ${nama}
+                ${noteHtml}
+            </div>` + receipt.innerHTML;
 
             let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-            let textWA = `*Pesanan Baru (QRIS)*%0A%0A*Nama:* ${nama}%0A*Meja/Alamat:* ${meja}%0A%0A*Pesanan:*%0A`;
+            // Format Pesan WA
+            let textWA = `*Pesanan Baru (QRIS)*%0A%0A*No. Antrean:* ${currentQueue}%0A*Nama:* ${nama}%0A`;
+            if(catatan) textWA += `*Catatan:* ${catatan}%0A`;
+            textWA += `%0A*Pesanan:*%0A`;
+            
             cart.forEach(i => textWA += `- ${i.qty}x ${i.name} (Rp ${(i.price * i.qty).toLocaleString()})%0A`);
-            textWA += `%0A*Total Bayar:* Rp ${total.toLocaleString('id-ID')}%0A%0A_Catatan: Struk & Bukti Transfer QRIS terlampir._`;
+            textWA += `%0A*Total Bayar:* Rp ${total.toLocaleString('id-ID')}%0A%0A_Catatan: Struk pesanan terlampir. Mohon sertakan bukti transfer QRIS Anda._`;
 
             let waLink = `https://wa.me/${NOMOR_WA_TOKO}?text=${textWA}`;
 
@@ -282,7 +302,7 @@
 
             html2canvas(receipt, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `Pesanan_${nama}.png`;
+                link.download = `Pesanan_${nama}_${currentQueue}.png`;
                 link.href = canvas.toDataURL();
                 link.click();
                 setTimeout(() => { window.location.href = waLink; }, 1000);
