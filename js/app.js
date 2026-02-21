@@ -1,28 +1,20 @@
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-// Import koneksi db dari file firebase.js yang kita buat
+// Karena firebase.js dan app.js sama-sama di dalam folder js, panggil begini:
 import { db } from "./firebase.js";
 
-// ==========================================
-// DATA CONFIGURATION
-// ==========================================
 const NOMOR_WA_TOKO = "6285939939449"; 
 const LINK_GAMBAR_QRIS = "https://res.cloudinary.com/dsutaioqw/image/upload/v1771581748/IMG-20260220-WA0004_xzigot.jpg"; 
 const ID_ADMIN_KASIR = "zy8AUA4PUdhj4LSrxzMgfT270Ut2"; 
 
-// ==========================================
-// STATE & VARIABLES
-// ==========================================
 let menus = [];
 let cart = [];
 let currentCategory = 'all'; 
 let currentQueue = ""; 
 
-// Inisialisasi awal (Set QRIS Image)
-document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
+});
 
-// ==========================================
-// FIREBASE LISTENER (AMBIL MENU)
-// ==========================================
 const menuCol = collection(db, "users", ID_ADMIN_KASIR, "menus");
 onSnapshot(menuCol, (snapshot) => {
     menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -31,14 +23,9 @@ onSnapshot(menuCol, (snapshot) => {
     renderMenus();
 }, (error) => {
     console.error("Error mengambil menu:", error);
-    document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Pastikan ID Admin benar dan Rules Firebase sudah di-set 'allow read: if true;'</p>`;
+    document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Cek aturan/rules Firebase Anda.</p>`;
 });
 
-// ==========================================
-// FUNGSI & LOGIKA APLIKASI
-// ==========================================
-
-// Fungsi Buat Nomor Antrean (ttbbtt + 3 angka acak)
 function generateQueueNumber() {
     const d = new Date();
     const dd = String(d.getDate()).padStart(2, '0');
@@ -52,12 +39,12 @@ function renderCategories() {
     const container = document.getElementById('category-tabs');
     const uniqueCats = [...new Set(menus.map(m => (m.category || 'lainnya').toLowerCase()))];
     
-    let html = `<button onclick="setCategory('all')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border ${currentCategory === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}">Semua</button>`;
+    let html = `<button onclick="window.setCategory('all')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border ${currentCategory === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}">Semua</button>`;
     
     uniqueCats.forEach(cat => {
         const isActive = currentCategory === cat;
         const activeClass = isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200';
-        html += `<button onclick="setCategory('${cat}')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border capitalize ${activeClass}">${cat}</button>`;
+        html += `<button onclick="window.setCategory('${cat}')" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold transition border capitalize ${activeClass}">${cat}</button>`;
     });
     container.innerHTML = html;
 }
@@ -96,7 +83,7 @@ function renderMenus() {
                 <h3 class="font-bold text-[11px] text-gray-800 leading-tight mb-1 line-clamp-2 h-7">${item.name}</h3>
                 <p class="text-xs text-blue-600 font-bold mb-3">Rp ${(item.price || 0).toLocaleString('id-ID')}</p>
             </div>
-            <button onclick="addToCart('${item.id}')" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition active:scale-95 flex items-center justify-center gap-1">
+            <button onclick="window.addToCart('${item.id}')" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition active:scale-95 flex items-center justify-center gap-1">
                 <i class="fas fa-plus text-[10px]"></i> Tambah
             </button>
         `;
