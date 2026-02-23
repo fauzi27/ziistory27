@@ -159,19 +159,72 @@ function renderMenus() {
     });
 }
 
-window.addToCart = function(id) {
+// ==========================================
+// 🌟 FUNGSI ADD TO CART (UPDATE DENGAN VARIAN LENGKAP)
+// ==========================================
+window.addToCart = async function(id) {
     const item = menus.find(m => m.id === id);
     if (!item) return;
 
-    const existing = cart.find(c => c.id === id);
+    let selectedVariant = "";
+    let itemNameLower = item.name.toLowerCase();
+    
+    // Cari kecocokan aturan dari atas ke bawah
+    let matchedVariant = MENU_VARIANTS.find(v => v.match(itemNameLower));
+
+    if (matchedVariant) {
+        const { value: variant } = await Swal.fire({
+            title: matchedVariant.title,
+            input: 'select', // Menggunakan dropdown agar rapi walau variannya banyak
+            inputOptions: matchedVariant.options,
+            inputPlaceholder: '-- Silakan Pilih Varian --',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            confirmButtonText: 'Pilih & Tambah',
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) return 'Pilih salah satu varian dulu bosku!';
+            }
+        });
+
+        if (variant) {
+            selectedVariant = variant;
+        } else {
+            return; // Batal jika ditutup
+        }
+    }
+
+    // Gabungkan nama menu dengan varian
+    let finalItemName = selectedVariant ? `${item.name} (${selectedVariant})` : item.name;
+    
+    // ID khusus agar tidak tergabung jika pesannya beda varian
+    let cartItemId = selectedVariant ? `${item.id}-${selectedVariant}` : item.id;
+
+    // Proses masuk keranjang
+    const existing = cart.find(c => c.cartItemId === cartItemId);
     if (existing) {
         existing.qty++;
     } else {
-        cart.push({ id: item.id, name: item.name, price: parseInt(item.price), qty: 1 });
+        cart.push({ 
+            cartItemId: cartItemId, 
+            id: item.id, 
+            name: finalItemName, 
+            price: parseInt(item.price), 
+            qty: 1 
+        });
     }
+    
     updateCartUI();
-    Swal.fire({toast: true, position: 'top-end', icon: 'success', title: `+1 ${item.name}`, showConfirmButton: false, timer: 700});
+    Swal.fire({
+        toast: true, 
+        position: 'top-end', 
+        icon: 'success', 
+        title: `+1 ${finalItemName}`, 
+        showConfirmButton: false, 
+        timer: 1000
+    });
 }
+
 
 function updateCartUI() {
     let total = 0;
