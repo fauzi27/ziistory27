@@ -11,6 +11,74 @@ let cart = [];
 let currentCategory = 'all'; 
 let currentQueue = ""; 
 
+// ==========================================
+// 🌟 KONFIGURASI VARIAN MENU (VERSI LENGKAP)
+// ==========================================
+const MENU_VARIANTS = [
+    // --- 1. MIE SEDAP ---
+    {
+        match: (name) => name.includes("sedap") && name.includes("goreng"),
+        title: "Varian Sedap Goreng",
+        options: { "Original": "Original", "Korea Pedas": "Korea Pedas" }
+    },
+    {
+        match: (name) => name.includes("sedap") && (name.includes("kuah") || name.includes("rebus")),
+        title: "Varian Sedap Kuah",
+        options: { "Soto": "Soto", "Ayam Bawang": "Ayam Bawang", "Kari": "Kari", "Bakso": "Bakso", "Singapura": "Singapura", "Korean Sup": "Korean Sup", "Ayam Pedas": "Ayam Pedas" }
+    },
+    {
+        match: (name) => name.includes("sedap"), // Fallback jika cuma ditulis "sedap"
+        title: "Pilih Varian Mie Sedap",
+        options: {
+            "Goreng - Original": "Goreng - Original", "Goreng - Korea Pedas": "Goreng - Korea Pedas",
+            "Kuah - Soto": "Kuah - Soto", "Kuah - Ayam Bawang": "Kuah - Ayam Bawang", "Kuah - Kari": "Kuah - Kari", "Kuah - Bakso": "Kuah - Bakso", "Kuah - Singapura": "Kuah - Singapura", "Kuah - Korean Sup": "Kuah - Korean Sup", "Kuah - Ayam Pedas": "Kuah - Ayam Pedas"
+        }
+    },
+
+    // --- 2. INDOMIE ---
+    {
+        match: (name) => name.includes("indomie") && name.includes("goreng"),
+        title: "Varian Indomie Goreng",
+        options: { "Original": "Original", "Rica-rica": "Rica-rica", "Ayam Geprek": "Ayam Geprek", "Rendang Jogja": "Rendang Jogja" }
+    },
+    {
+        match: (name) => name.includes("indomie") && (name.includes("kuah") || name.includes("rebus")),
+        title: "Varian Indomie Kuah",
+        options: { "Soto": "Soto", "Soto Lamongan": "Soto Lamongan", "Kaldu Ayam": "Kaldu Ayam", "Ayam Spesial": "Ayam Spesial" }
+    },
+    {
+        match: (name) => name.includes("indomie"), // Fallback jika cuma ditulis "indomie"
+        title: "Pilih Varian Indomie",
+        options: {
+            "Goreng - Original": "Goreng - Original", "Goreng - Rica-rica": "Goreng - Rica-rica", "Goreng - Ayam Geprek": "Goreng - Ayam Geprek", "Goreng - Rendang Jogja": "Goreng - Rendang Jogja",
+            "Kuah - Soto": "Kuah - Soto", "Kuah - Soto Lamongan": "Kuah - Soto Lamongan", "Kuah - Kaldu Ayam": "Kuah - Kaldu Ayam", "Kuah - Ayam Spesial": "Kuah - Ayam Spesial"
+        }
+    },
+
+    // --- 3. MIE SUKSES ---
+    {
+        match: (name) => name.includes("sukses") && name.includes("goreng"),
+        title: "Varian Sukses Goreng",
+        options: { "Ayam Kecap / Kremes": "Ayam Kecap / Kremes", "Aceh": "Aceh", "Rendang": "Rendang" }
+    },
+    {
+        match: (name) => name.includes("sukses") && (name.includes("kuah") || name.includes("rebus")),
+        title: "Varian Sukses Kuah",
+        options: { "Soto": "Soto", "Ayam Bawang": "Ayam Bawang", "Kari Ayam": "Kari Ayam" }
+    },
+    {
+        match: (name) => name.includes("sukses"), // Fallback jika cuma ditulis "sukses"
+        title: "Pilih Varian Mie Sukses",
+        options: {
+            "Goreng - Ayam Kecap/Kremes": "Goreng - Ayam Kecap/Kremes", "Goreng - Aceh": "Goreng - Aceh", "Goreng - Rendang": "Goreng - Rendang",
+            "Kuah - Soto": "Kuah - Soto", "Kuah - Ayam Bawang": "Kuah - Ayam Bawang", "Kuah - Kari Ayam": "Kuah - Kari Ayam"
+        }
+    }
+];
+// ==========================================
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
 });
