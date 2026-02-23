@@ -1,21 +1,26 @@
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-// Karena firebase.js dan app.js sama-sama di dalam folder js, panggil begini:
 import { db } from "./firebase.js";
 
+// ==========================================
+// 1. DATA CONFIGURATION
+// ==========================================
 const NOMOR_WA_TOKO = "6285939939449"; 
 const LINK_GAMBAR_QRIS = "https://res.cloudinary.com/dsutaioqw/image/upload/v1771581748/IMG-20260220-WA0004_xzigot.jpg"; 
 const ID_ADMIN_KASIR = "zy8AUA4PUdhj4LSrxzMgfT270Ut2"; 
 
+// ==========================================
+// 2. STATE & VARIABLES
+// ==========================================
 let menus = [];
 let cart = [];
 let currentCategory = 'all'; 
 let currentQueue = ""; 
 
 // ==========================================
-// 🌟 KONFIGURASI VARIAN MENU (VERSI LENGKAP)
+// 3. KONFIGURASI VARIAN MENU
 // ==========================================
 const MENU_VARIANTS = [
-    // --- 1. MIE SEDAP ---
+    // --- MIE SEDAP ---
     {
         match: (name) => name.includes("sedap") && name.includes("goreng"),
         title: "Varian Sedap Goreng",
@@ -27,15 +32,14 @@ const MENU_VARIANTS = [
         options: { "Soto": "Soto", "Ayam Bawang": "Ayam Bawang", "Kari": "Kari", "Bakso": "Bakso", "Singapura": "Singapura", "Korean Sup": "Korean Sup", "Ayam Pedas": "Ayam Pedas" }
     },
     {
-        match: (name) => name.includes("sedap"), // Fallback jika cuma ditulis "sedap"
+        match: (name) => name.includes("sedap"), 
         title: "Pilih Varian Mie Sedap",
         options: {
             "Goreng - Original": "Goreng - Original", "Goreng - Korea Pedas": "Goreng - Korea Pedas",
             "Kuah - Soto": "Kuah - Soto", "Kuah - Ayam Bawang": "Kuah - Ayam Bawang", "Kuah - Kari": "Kuah - Kari", "Kuah - Bakso": "Kuah - Bakso", "Kuah - Singapura": "Kuah - Singapura", "Kuah - Korean Sup": "Kuah - Korean Sup", "Kuah - Ayam Pedas": "Kuah - Ayam Pedas"
         }
     },
-
-    // --- 2. INDOMIE ---
+    // --- INDOMIE ---
     {
         match: (name) => name.includes("indomie") && name.includes("goreng"),
         title: "Varian Indomie Goreng",
@@ -47,15 +51,14 @@ const MENU_VARIANTS = [
         options: { "Soto": "Soto", "Soto Lamongan": "Soto Lamongan", "Kaldu Ayam": "Kaldu Ayam", "Ayam Spesial": "Ayam Spesial" }
     },
     {
-        match: (name) => name.includes("indomie"), // Fallback jika cuma ditulis "indomie"
+        match: (name) => name.includes("indomie"), 
         title: "Pilih Varian Indomie",
         options: {
             "Goreng - Original": "Goreng - Original", "Goreng - Rica-rica": "Goreng - Rica-rica", "Goreng - Ayam Geprek": "Goreng - Ayam Geprek", "Goreng - Rendang Jogja": "Goreng - Rendang Jogja",
             "Kuah - Soto": "Kuah - Soto", "Kuah - Soto Lamongan": "Kuah - Soto Lamongan", "Kuah - Kaldu Ayam": "Kuah - Kaldu Ayam", "Kuah - Ayam Spesial": "Kuah - Ayam Spesial"
         }
     },
-
-    // --- 3. MIE SUKSES ---
+    // --- MIE SUKSES ---
     {
         match: (name) => name.includes("sukses") && name.includes("goreng"),
         title: "Varian Sukses Goreng",
@@ -67,7 +70,7 @@ const MENU_VARIANTS = [
         options: { "Soto": "Soto", "Ayam Bawang": "Ayam Bawang", "Kari Ayam": "Kari Ayam" }
     },
     {
-        match: (name) => name.includes("sukses"), // Fallback jika cuma ditulis "sukses"
+        match: (name) => name.includes("sukses"), 
         title: "Pilih Varian Mie Sukses",
         options: {
             "Goreng - Ayam Kecap/Kremes": "Goreng - Ayam Kecap/Kremes", "Goreng - Aceh": "Goreng - Aceh", "Goreng - Rendang": "Goreng - Rendang",
@@ -75,14 +78,15 @@ const MENU_VARIANTS = [
         }
     }
 ];
+
 // ==========================================
-
-
-
+// 4. INISIALISASI AWAL
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('qris-image').src = LINK_GAMBAR_QRIS;
 });
 
+// Ambil data menu dari Firebase secara real-time
 const menuCol = collection(db, "users", ID_ADMIN_KASIR, "menus");
 onSnapshot(menuCol, (snapshot) => {
     menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -93,6 +97,10 @@ onSnapshot(menuCol, (snapshot) => {
     console.error("Error mengambil menu:", error);
     document.getElementById('loading-menu').innerHTML = `<p class="text-red-500 text-xs">Gagal memuat menu. Cek aturan/rules Firebase Anda.</p>`;
 });
+
+// ==========================================
+// 5. CORE FUNCTIONS (LOGIKA UI & KERANJANG)
+// ==========================================
 
 function generateQueueNumber() {
     const d = new Date();
@@ -132,7 +140,7 @@ function renderMenus() {
         availableMenus = availableMenus.filter(m => (m.category || 'lainnya').toLowerCase() === currentCategory);
     }
 
-    if(availableMenus.length === 0) {
+    if (availableMenus.length === 0) {
         container.innerHTML = '<p class="col-span-2 text-center text-gray-400 text-xs py-10 italic">Menu tidak ditemukan.</p>';
         return;
     }
@@ -159,23 +167,19 @@ function renderMenus() {
     });
 }
 
-// ==========================================
-// 🌟 FUNGSI ADD TO CART (UPDATE DENGAN VARIAN LENGKAP)
-// ==========================================
 window.addToCart = async function(id) {
     const item = menus.find(m => m.id === id);
     if (!item) return;
 
     let selectedVariant = "";
-    let itemNameLower = item.name.toLowerCase();
+    let itemNameLower = (item.name || "").toLowerCase();
     
-    // Cari kecocokan aturan dari atas ke bawah
     let matchedVariant = MENU_VARIANTS.find(v => v.match(itemNameLower));
 
     if (matchedVariant) {
         const { value: variant } = await Swal.fire({
             title: matchedVariant.title,
-            input: 'select', // Menggunakan dropdown agar rapi walau variannya banyak
+            input: 'select', 
             inputOptions: matchedVariant.options,
             inputPlaceholder: '-- Silakan Pilih Varian --',
             showCancelButton: true,
@@ -190,17 +194,13 @@ window.addToCart = async function(id) {
         if (variant) {
             selectedVariant = variant;
         } else {
-            return; // Batal jika ditutup
+            return; 
         }
     }
 
-    // Gabungkan nama menu dengan varian
     let finalItemName = selectedVariant ? `${item.name} (${selectedVariant})` : item.name;
-    
-    // ID khusus agar tidak tergabung jika pesannya beda varian
     let cartItemId = selectedVariant ? `${item.id}-${selectedVariant}` : item.id;
 
-    // Proses masuk keranjang
     const existing = cart.find(c => c.cartItemId === cartItemId);
     if (existing) {
         existing.qty++;
@@ -225,7 +225,6 @@ window.addToCart = async function(id) {
     });
 }
 
-
 function updateCartUI() {
     let total = 0;
     let count = 0;
@@ -235,6 +234,10 @@ function updateCartUI() {
     document.getElementById('cart-count').innerText = count;
     document.getElementById('qris-amount').innerText = 'Rp ' + total.toLocaleString('id-ID');
 }
+
+// ==========================================
+// 6. CHECKOUT & PROSES PEMBAYARAN
+// ==========================================
 
 window.showCheckout = function() {
     if (cart.length === 0) return Swal.fire('Kosong', 'Pilih menu dulu ya kak!', 'warning');
@@ -294,7 +297,7 @@ window.processOrder = function() {
     let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
     let textWA = `*Pesanan Baru (QRIS)*%0A%0A*No. Antrean:* ${currentQueue}%0A*Nama:* ${nama}%0A`;
-    if(catatan) textWA += `*Catatan:* ${catatan}%0A`;
+    if (catatan) textWA += `*Catatan:* ${catatan}%0A`;
     textWA += `%0A*Pesanan:*%0A`;
     
     cart.forEach(i => textWA += `- ${i.qty}x ${i.name} (Rp ${(i.price * i.qty).toLocaleString()})%0A`);
